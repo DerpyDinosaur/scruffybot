@@ -1,0 +1,1 @@
+void colourText(char *text, char colour);
