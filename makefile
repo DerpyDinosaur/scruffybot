@@ -5,7 +5,7 @@ EXEC = scruff
 FLAGS = -g -Wall -ljson-c
 RM = rm
 
-all: $(EXEC);./scruff
+all: $(EXEC);./scruff -v
 
 debug: $(EXEC)
 

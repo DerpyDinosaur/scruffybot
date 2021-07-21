@@ -4,6 +4,7 @@
 */
 #include "verbose.h"
 #include "looting.h"
+#include "tools.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,8 +12,9 @@
 #include <string.h>
 #include <getopt.h>
 
+// CONSTANTS
 #define LINESIZE 500
-
+#define JAILCHAR 17
 /*
 TODO:
 	0: Create support for multiple log files and servers
@@ -49,31 +51,38 @@ void help(){
 	puts("\tscruff -h");
 
 	puts("\nOPTIONS\t\tDESCRIPTION");
-	puts("\t-v\tVerbose mode, enter as the first argument or it will be ignored.");
+	puts("\t-o\tOutput Type mode, outputs a file based on the format.\n\t\t\tTypes include htaccess, foo, bar");
+	puts("\t-v\tVerbose mode.");
 }
 
 int main(int argc, char *argv[]){
 // Init variables
 	int opt;
-	char *_logsPath = NULL;
+	char *_outputfile;
 
 // Loop through arguments, colons can have extra commands after them.
-	while((opt = getopt(argc, argv, ":l:ov")) != -1){
+	while((opt = getopt(argc, argv, ":o:v")) != -1){
 		switch(opt){
-			case 'l':// Define log file location
-				_logsPath = optarg;
+			case 'o':// Set output file
+				if (strcmp(optarg, "htaccess") == 0){
+					_outputfile = optarg;
+				}else{
+					help();
+					return 0;
+				}
 				break;
 
-			case 'o':// Deactivate Data Collection
-				setLooting(true);
-				break;
-
-			case 'v':// Activate verbose
+			case 'v':// Enable verbose
 				setVerbose(true);
 				break;
 
+			case ':':
+				printf("Option: -%c requires a value\n", optopt);
+				exit(EXIT_SUCCESS);
+
 			case 'h':
 			case '?':
+				printf("Invalid Option: %c\n", optopt);
 				help();
 			    exit(EXIT_SUCCESS);
 
@@ -90,15 +99,17 @@ int main(int argc, char *argv[]){
 // Vars
 	// Create a jail array
 	char **jail;
-	size_t jailSize = 0;
-	jail = malloc(jailSize+1 * sizeof(char));
-	jail[0] = malloc(16 * sizeof(char));
+	size_t jailSize = 1;
+	jail = malloc(jailSize * sizeof(char*));
+	jail[0] = malloc(JAILCHAR * sizeof(char));
 	// Black listed URLs
-	size_t nonoUrlSize = 3;
-	const char nonoUrl[][20] = {
-		"wp-includes", "xmlrpc.php", "wordpress"
+	const char *nonoUrl[20] = {
+		"wp-includes", "xmlrpc.php", "wordpress", "robots.txt", "login",
+		"@md5", ".git", "../"
 	};
+	const size_t nonoUrlSize = sizeof(&nonoUrl);
 	bool malicious = false;
+	char verboseStr[64];
 // File Pointer vars
 	FILE *fp;
 	char buffer[LINESIZE];
@@ -106,6 +117,10 @@ int main(int argc, char *argv[]){
 	const char ipToken[6] = " - - ";
 	char *token;
 
+/*---------------------------------
+	PROGRAM START
+*/
+	printf("Scruffy is on the hunt...\n");
 // Open log file
 	if ((fp = fopen("logSamples/access.log", "r")) == NULL){
 		// Close 
@@ -115,11 +130,11 @@ int main(int argc, char *argv[]){
 	}
 
 // Loop through log file and find bad ips'
-	// while(!feof(fp)){
-	for (int z = 0; z < 10; ++z){
+	while(!feof(fp)){
+	// for (int z = 0; z < 10; ++z){
 		fgets(buffer, LINESIZE, fp);
 	// Check if the IP infringes on nonoUrl laws
-		for (int x = 0; x < 3; ++x){
+		for (int x = 0; x < nonoUrlSize; ++x){
 		// If a someone is accessing the CTF give them a free pass
 			if(strstr(buffer, "GET /ctf/") != NULL){
 				break;
@@ -127,7 +142,7 @@ int main(int argc, char *argv[]){
 
 		// If an illegal url has been accessed set malicious bool to true
 			if (strstr(buffer, nonoUrl[x]) != NULL){
-				printf("\nAccessed Illegal URL: %s\n", nonoUrl[x]);
+				strcpy(verboseStr, nonoUrl[x]);
 				malicious = true;
 				break;
 			}
@@ -135,22 +150,46 @@ int main(int argc, char *argv[]){
 
 	// Check If IP is already in jail
 		token = strtok(buffer, ipToken);
-		for (size_t i = 0; i < jailSize; ++i){
+		for (size_t i = 0; i < jailSize-1; ++i){
 			if (strcmp(jail[i], token) == 0){
 				malicious = false;
 			}
 		}
 	// If buffer is found malicious then save IP to Jail.
 		if (malicious){
-			colourText("[+] IP has been added to jail.", 'g');
-		// TODO: reallocate memory to jail
-			strcpy(jail[jailSize], token);
+			strcpy(jail[jailSize-1], token);
+
+			jailSize += 1;
+			jail = realloc(jail, jailSize * sizeof(char*));
+			jail[jailSize-1] = malloc(JAILCHAR * sizeof(char));
+
 			malicious = false;
+
+		// DEBUG
+			verbose(GREEN"[+] IP: %s\n"RED"    Accessed: %s\n"RESET, token, verboseStr);
 		}
 	}
-	puts("");
-	for (size_t i = 0; i < jailSize; ++i){
-		printf("%s\n", jail[i]);
-	}
+// puts("");
+// 	for (size_t x = 0; x < 2; ++x){
+// 		for (size_t y = 0; y < JAILCHAR; ++y){
+
+// 			if (y == 16){
+// 				printf("%d\n", jail[x][y]);
+// 			}else{
+// 				printf("%d ", jail[x][y]);
+// 			}
+// 		}
+// 	}
+// puts("");
+// 	puts("~ JAIL ~");
+// 	for (size_t i = 0; i < jailSize; ++i){
+// 		printf("%s\n", jail[i]);
+// 	}
+
+	// for (int i = 0; i < sizeof(verboseStr); ++i){
+	// 	printf("%d", verboseStr[i]);
+	// }printf("\n");
+
+	free(jail);
 	return 0;
 }

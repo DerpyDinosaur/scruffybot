@@ -26,20 +26,52 @@ struct Loot{
 };
 
 void lootTest(){
-	char **array;
-	array = malloc(2 * sizeof(char));
-	array[0] = malloc(4 * sizeof(char));
-	array[1] = malloc(5 * sizeof(char));
+	// size_t buff = 3;
+	// int arraySize = 1;
+	// char *array = malloc(buff * arraySize * sizeof(char));
+	// if (array == NULL){
+	// 	printf("MEMROY CANNOT BE ALLOCATED");
+	// 	free(array);
+	// }
+	// array[0] = 'h';
+	// array[1] = 'i';
+	// array[2] = '\0';
+	// printf("%s\n", array+buff*arraySize);
 
-	strcpy(array[0], "foo");
-	strcpy(array[1], "barr");
-	printf("%s\n", array[0]);
-	printf("%s\n", array[1]);
+	// arraySize += 1;
+	// char *tmp = realloc(array, buff * arraySize * sizeof(char));
+	// if (tmp == NULL){
+	// 	printf("MEMROY CANNOT BE ALLOCATED");
+	// 	free(tmp);
+	// }
+	// array = tmp;
+	// strcpy(array+buff*arraySize, "fo");
+	// printf("%s\n", array+buff*arraySize);
 
-	array = realloc(array, 3 * sizeof(char));
-	array[2] = malloc(5 * sizeof(char));
-	strcpy(array[2], "goo");
-	printf("%s\n", array[2]);
+//----------------------------------------------
+	// char *array[3 * 4];
+	size_t size = 1;
+	size_t buff = 4;
+	char *array = malloc(buff * size * sizeof(char*));
+	strcpy(array, "aa");
+
+	size += 1;
+	array = realloc(array, buff * size * sizeof(char*));
+	strcpy(array+buff*(size-1), "bb");
+
+	size += 1;
+	array = realloc(array, buff * size * sizeof(char*));
+	
+	strcpy(array+buff+buff, "cc");
+	printf("%s\n", array);
+	printf("%s\n", array+buff);
+	printf("%s\n", array+buff*2);
+
+	for (size_t i = 0; i < sizeof(array); ++i){
+		printf("%d ", array[i]);
+	}
+
+	free(array);
 	return;
 }
 

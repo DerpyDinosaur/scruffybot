@@ -19,9 +19,9 @@ void setVerbose(bool setting){
 	Verbose = setting;
 }
 
+// TODO: Make verbose change colours
 int verbose(const char * restrict format, ...){
-    if( !Verbose )
-        return 0;
+    if( !Verbose ){return 0;}
 
     va_list args;
     va_start(args, format);
